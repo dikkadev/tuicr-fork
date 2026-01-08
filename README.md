@@ -79,32 +79,18 @@ tuicr
 
 ## Review Output
 
-When you export your review (`:e` or confirm on `:wq`), `tuicr` copies structured Markdown to your clipboard:
+When you export your review (`:e` or confirm on `:wq`), `tuicr` copies structured Markdown to your clipboard. The format is optimized for pasting into AI agent conversations:
 
 ```markdown
-# Code Review: myproject
+I reviewed your code and have the following comments. Please address them.
 
-**Reviewed:** 2024-01-15 10:30:00 UTC
-**Base Commit:** `abc1234`
-**Files Reviewed:** 3/5
+Comment types: ISSUE (problems to fix), SUGGESTION (improvements), NOTE (observations), PRAISE (positive feedback)
 
-## Files
-
-### M `src/auth.rs` [REVIEWED]
-
-#### File Comments
-> **[SUGGESTION]** Consider adding unit tests
-
-#### Line Comments
-**Line 42:**
-> **[ISSUE]** Magic number should be a named constant
-
----
-
-## Action Items
-
-1. **`src/auth.rs`:42** - Magic number should be a named constant
+1. **[SUGGESTION]** `src/auth.rs` - Consider adding unit tests
+2. **[ISSUE]** `src/auth.rs:42` - Magic number should be a named constant
 ```
+
+Each comment is numbered and self-contained with its file path and line number (if applicable).
 
 ## Session Persistence
 

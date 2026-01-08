@@ -100,25 +100,20 @@ src/
 
 ## Review Format (for coding agents receiving tuicr output)
 
-When a user reviews your changes with tuicr, they will provide you with a structured Markdown document.
+When a user reviews your changes with tuicr, they will provide you with a structured Markdown document optimized for agent consumption.
 
 ### Document Structure
 
 ```markdown
-# Code Review: {project_name}
+I reviewed your code and have the following comments. Please address them.
 
-**Reviewed:** {timestamp}
-**Base Commit:** `{commit_sha}`
-**Files Reviewed:** {reviewed_count}/{total_count}
+Comment types: ISSUE (problems to fix), SUGGESTION (improvements), NOTE (observations), PRAISE (positive feedback)
 
-## Summary
-{optional overall notes}
+Summary: {optional overall notes}
 
-## Files
-{per-file feedback}
-
-## Action Items
-{prioritized list of issues to address}
+1. **[ISSUE]** `src/auth.rs:42` - Magic number should be a named constant
+2. **[SUGGESTION]** `src/api.rs` - Consider adding unit tests
+3. **[NOTE]** `src/utils.rs:15` - Why was this approach chosen?
 ```
 
 ### Comment Types
@@ -130,24 +125,23 @@ When a user reviews your changes with tuicr, they will provide you with a struct
 | **[NOTE]** | Observation or question | Respond or acknowledge |
 | **[PRAISE]** | Positive feedback | No action needed |
 
-### File Status Markers
+### Comment Format
 
-- `M` - Modified
-- `A` - Added (new file)
-- `D` - Deleted
-- `R` - Renamed
+Each comment is numbered and self-contained:
+- `{n}. **[TYPE]** \`{file}:{line}\` - {content}` (line comment)
+- `{n}. **[TYPE]** \`{file}\` - {content}` (file comment)
+
+You can reference comments by number (e.g., "Regarding comment #2...").
 
 ### How to Respond
 
-#### 1. Address Action Items First
+#### 1. Address Issues First
 
-The "Action Items" section contains all **[ISSUE]** comments. These are blocking:
+**[ISSUE]** comments are blocking and must be fixed:
 
 ```markdown
-## Action Items
-
-1. **`src/auth.rs`:42** - Magic number should be a named constant
-2. **`src/api.rs`:15** - Missing error handling for network failure
+## Issues Addressed
+- #1 `src/auth.rs:42` - Extracted magic number to `TOKEN_EXPIRY_SECONDS` constant
 ```
 
 #### 2. Consider Suggestions
@@ -164,22 +158,23 @@ The "Action Items" section contains all **[ISSUE]** comments. These are blocking
 ## Changes Made
 
 ### Issues Addressed
-- `src/auth.rs:42` - Extracted magic number to `TOKEN_EXPIRY_SECONDS` constant
+- #1 - Extracted magic number to `TOKEN_EXPIRY_SECONDS` constant
 
 ### Suggestions Implemented
-- `src/utils.rs` - Replaced Vec with HashMap as suggested
+- #2 - Added unit tests for API module
 
 ### Suggestions Declined
-- `src/config.rs` - Kept current approach because [reason]
+- #5 - Kept current approach because [reason]
 
-### Questions Answered
-- The `unsafe` block in `src/ffi.rs` is required for FFI calls
+### Notes Addressed
+- #3 - This approach was chosen for performance reasons
 ```
 
 ## Tips for Coding Agents
 
 1. **Read the full review** before making changes
 2. **Prioritize [ISSUE] items** - these are blocking
-3. **Preserve reviewer intent** - don't over-engineer solutions
-4. **Be concise** in your response
-5. **If unclear**, ask for clarification rather than guessing
+3. **Reference comments by number** when responding
+4. **Preserve reviewer intent** - don't over-engineer solutions
+5. **Be concise** in your response
+6. **If unclear**, ask for clarification rather than guessing
