@@ -123,6 +123,3 @@ cargo test
 cargo fmt
 ```
 
-## License
-
-MIT
