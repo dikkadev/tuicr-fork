@@ -20,6 +20,7 @@ This project uses an automated release workflow via GitHub Actions.
      - `aarch64-unknown-linux-gnu` (Linux ARM64)
      - `aarch64-apple-darwin` (macOS Apple Silicon)
      - `x86_64-pc-windows-msvc` (Windows x64)
+6. **Update Homebrew tap** (manual, see below)
 
 ## Build Binaries for Existing Release
 
@@ -50,6 +51,21 @@ For meaningful changelogs, use conventional commits:
 | `refactor:` | Refactor | `refactor: simplify state machine` |
 | `test:` | Testing | `test: add integration tests` |
 | `chore:` | Miscellaneous | `chore: update dependencies` |
+
+## Update Homebrew Tap
+
+After binaries are uploaded, update the Homebrew formula:
+
+```bash
+# Get SHA256 checksums for the new version
+VERSION=X.Y.Z
+curl -sL "https://github.com/agavra/tuicr/releases/download/v${VERSION}/tuicr-${VERSION}-aarch64-apple-darwin.tar.gz" | shasum -a 256
+curl -sL "https://github.com/agavra/tuicr/releases/download/v${VERSION}/tuicr-${VERSION}-x86_64-unknown-linux-gnu.tar.gz" | shasum -a 256
+curl -sL "https://github.com/agavra/tuicr/releases/download/v${VERSION}/tuicr-${VERSION}-aarch64-unknown-linux-gnu.tar.gz" | shasum -a 256
+
+# Update homebrew-tuicr/Formula/tuicr.rb with new version and checksums
+# Then commit and push to homebrew-tuicr repo
+```
 
 ## Required Secrets
 

@@ -34,6 +34,12 @@ to clipboard in a format ready to paste back to the agent.
 
 ## Installation
 
+### Homebrew (macOS/Linux)
+
+```bash
+brew install agavra/tuicr/tuicr
+```
+
 ### Pre-built binaries
 
 Download the latest release for your platform from [GitHub Releases](https://github.com/agavra/tuicr/releases).
