@@ -1,8 +1,12 @@
 use git2::{Delta, Diff, DiffOptions, Repository};
 use std::path::PathBuf;
+use std::sync::LazyLock;
 
 use crate::error::{Result, TuicrError};
 use crate::model::{DiffFile, DiffHunk, DiffLine, FileStatus, LineOrigin};
+use crate::syntax::SyntaxHighlighter;
+
+static HIGHLIGHTER: LazyLock<SyntaxHighlighter> = LazyLock::new(SyntaxHighlighter::new);
 
 pub fn get_working_tree_diff(repo: &Repository) -> Result<Vec<DiffFile>> {
     let head = repo.head()?.peel_to_tree()?;
@@ -64,10 +68,13 @@ fn parse_diff(diff: &Diff) -> Result<Vec<DiffFile>> {
         let new_path = delta.new_file().path().map(PathBuf::from);
         let is_binary = delta.old_file().is_binary() || delta.new_file().is_binary();
 
+        // Use new_path for highlighting (the current version of the file)
+        let file_path = new_path.as_ref().or(old_path.as_ref());
+
         let hunks = if is_binary {
             Vec::new()
         } else {
-            parse_hunks(diff, delta_idx)?
+            parse_hunks(diff, delta_idx, file_path, &HIGHLIGHTER)?
         };
 
         files.push(DiffFile {
@@ -86,7 +93,12 @@ fn parse_diff(diff: &Diff) -> Result<Vec<DiffFile>> {
     Ok(files)
 }
 
-fn parse_hunks(diff: &Diff, delta_idx: usize) -> Result<Vec<DiffHunk>> {
+fn parse_hunks(
+    diff: &Diff,
+    delta_idx: usize,
+    file_path: Option<&PathBuf>,
+    highlighter: &SyntaxHighlighter,
+) -> Result<Vec<DiffHunk>> {
     let mut hunks: Vec<DiffHunk> = Vec::new();
 
     let patch = git2::Patch::from_diff(diff, delta_idx)?;
@@ -98,6 +110,10 @@ fn parse_hunks(diff: &Diff, delta_idx: usize) -> Result<Vec<DiffHunk>> {
             let header = String::from_utf8_lossy(hunk.header()).trim().to_string();
 
             let mut lines: Vec<DiffLine> = Vec::new();
+
+            // First, collect all line content for syntax highlighting
+            let mut line_contents: Vec<String> = Vec::new();
+            let mut line_origins: Vec<LineOrigin> = Vec::new();
 
             for line_idx in 0..patch.num_lines_in_hunk(hunk_idx)? {
                 let line = patch.line_in_hunk(hunk_idx, line_idx)?;
@@ -114,14 +130,40 @@ fn parse_hunks(diff: &Diff, delta_idx: usize) -> Result<Vec<DiffHunk>> {
                     .trim_end_matches('\r')
                     .to_string();
 
+                line_contents.push(content);
+                line_origins.push(origin);
+            }
+
+            // Apply syntax highlighting if we have a file path
+            let highlighted_lines = if let Some(path) = file_path {
+                highlighter.highlight_file_lines(path, &line_contents)
+            } else {
+                None
+            };
+
+            // Now create DiffLines with syntax highlighting applied
+            for line_idx in 0..patch.num_lines_in_hunk(hunk_idx)? {
+                let line = patch.line_in_hunk(hunk_idx, line_idx)?;
                 let old_lineno = line.old_lineno();
                 let new_lineno = line.new_lineno();
+                let content = line_contents[line_idx].clone();
+                let origin = line_origins[line_idx];
+
+                // Get highlighted spans and apply diff background
+                let highlighted_spans = if let Some(ref all_highlighted) = highlighted_lines {
+                    all_highlighted.get(line_idx).map(|spans| {
+                        SyntaxHighlighter::apply_diff_background(spans.clone(), origin)
+                    })
+                } else {
+                    None
+                };
 
                 lines.push(DiffLine {
                     origin,
                     content,
                     old_lineno,
                     new_lineno,
+                    highlighted_spans,
                 });
             }
 
